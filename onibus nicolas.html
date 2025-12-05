@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rodovia da Rotina - App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Animações customizadas */
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+        .duration-1000 { transition-duration: 1000ms; }
+        
+        .bus-container {
+            transition: top 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-green-100 min-h-screen pb-10">
+
+    <!-- Header Estilo Placa de Rodovia -->
+    <div class="bg-green-700 p-4 shadow-lg sticky top-0 z-50 border-b-4 border-white">
+        <div class="flex justify-between items-center max-w-md mx-auto text-white">
+            <div class="border-2 border-white rounded-lg px-3 py-1 bg-green-600">
+                <h1 class="text-xl font-bold tracking-wider uppercase">BR-ROTINA</h1>
+                <p class="text-xs text-center text-green-100" id="km-display">KM 0 / 15</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <i data-lucide="bus-front" class="w-8 h-8 text-yellow-400 animate-pulse"></i>
+            </div>
+        </div>
+        
+        <!-- Barra de Progresso / Tanque -->
+        <div class="mt-3 max-w-md mx-auto">
+            <div class="w-full bg-green-900 rounded-full h-4 border-2 border-white overflow-hidden relative">
+                <div 
+                    id="progress-bar"
+                    class="bg-yellow-400 h-full transition-all duration-1000 ease-out flex items-center justify-end pr-1"
+                    style="width: 0%"
+                >
+                    <span class="text-[10px] font-bold text-black opacity-75">BUS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto px-4 mt-6 relative" id="app-container">
+        
+        <!-- A ESTRADA (Linha central) -->
+        <div class="absolute left-8 top-0 bottom-0 w-16 bg-gray-600 rounded-lg z-0 border-l-4 border-r-4 border-gray-700 overflow-hidden">
+            <!-- Faixas amarelas -->
+            <div class="h-full w-full flex flex-col items-center justify-around py-4" id="road-lines">
+                <!-- Gerado via JS -->
+            </div>
+        </div>
+
+        <!-- O ÔNIBUS (Avatar que se move) -->
+        <div 
+            id="bus-avatar"
+            class="absolute left-6 z-20 bus-container"
+            style="top: 0%; transform: translateY(20px);"
+        >
+            <div class="relative">
+                <div class="bg-yellow-400 p-2 rounded-xl border-4 border-black shadow-xl w-20 h-24 flex flex-col items-center justify-center">
+                    <div class="w-16 h-8 bg-blue-300 border-2 border-black rounded-t-lg mb-1 overflow-hidden relative">
+                        <div class="absolute top-0 right-1 w-2 h-full bg-white opacity-40 skew-x-12"></div>
+                    </div>
+                    <div class="flex gap-2 w-full justify-center px-1">
+                        <div class="w-3 h-3 bg-yellow-600 rounded-full animate-bounce"></div>
+                        <div class="w-3 h-3 bg-yellow-600 rounded-full animate-bounce delay-100"></div>
+                    </div>
+                    <div class="w-full bg-black h-1 mt-2"></div>
+                    <div class="text-[10px] font-bold mt-1">ESCOLAR</div>
+                </div>
+                <!-- Fumaça (controlada via JS) -->
+                <div id="bus-smoke" class="hidden absolute -bottom-4 left-2 gap-1">
+                    <div class="w-3 h-3 bg-gray-400 rounded-full animate-ping opacity-75"></div>
+                    <div class="w-2 h-2 bg-gray-300 rounded-full animate-ping delay-75 opacity-75"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE TAREFAS -->
+        <div id="task-list" class="space-y-6 relative z-10 pl-24 pt-4 pb-32">
+            <!-- Renderizado via JS -->
+        </div>
+
+        <!-- GARAGEM FINAL -->
+        <div id="garage" class="mt-8 p-6 bg-yellow-400 rounded-xl border-4 border-yellow-600 text-center shadow-2xl transition-all duration-500 opacity-50 pl-24 ml-0">
+            <div class="flex justify-center mb-2">
+                <i data-lucide="trophy" id="trophy-icon" class="w-12 h-12 text-yellow-700"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-yellow-900 uppercase">Garagem Final</h2>
+            <p id="garage-text" class="text-yellow-800 font-semibold">
+                Complete a rota para estacionar.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Modal de Recompensa -->
+    <div id="reward-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center border-b-8 border-green-500 shadow-2xl relative overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+            <div class="absolute top-0 left-0 w-full h-20 bg-green-500 -z-10"></div>
+            <div class="bg-white p-4 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center shadow-lg border-4 border-green-500">
+                <i data-lucide="bus-front" class="w-12 h-12 text-green-600"></i>
+            </div>
+            <h2 class="text-2xl font-black text-gray-800 mb-2">ROTA CONCLUÍDA!</h2>
+            <p class="text-gray-600 mb-6">Você completou todas as paradas do dia com sucesso.</p>
+            <button 
+                onclick="closeReward()"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition-colors text-lg"
+            >
+                ESTACIONAR ÔNIBUS
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DADOS DA ROTINA ---
+        const routineSteps = [
+            { id: 1, label: "Acordar", icon: "sun", color: "text-yellow-500", time: "Manhã" },
+            { id: 2, label: "Higiene Pessoal", icon: "shower-head", color: "text-blue-400", time: "Manhã" },
+            { id: 3, label: "Ir para Escola", icon: "school", color: "text-red-500", time: "Manhã" },
+            { id: 4, label: "Higiene Pós-Escola", icon: "shower-head", color: "text-blue-400", time: "Tarde" },
+            { id: 5, label: "Almoço", icon: "utensils", color: "text-orange-500", time: "Tarde" },
+            { id: 6, label: "Descanso no Quarto", icon: "bed-double", color: "text-indigo-400", time: "Tarde" },
+            { id: 7, label: "Lanche da Tarde", icon: "utensils", color: "text-orange-400", time: "Tarde" },
+            { id: 8, label: "Tempo de Tablet", icon: "gamepad-2", color: "text-purple-500", time: "Lazer" },
+            { id: 9, label: "Banho Antes / Prep.", icon: "shower-head", color: "text-blue-500", time: "Noite" },
+            { id: 10, label: "Janta (18h)", icon: "utensils", color: "text-green-600", time: "18:00" },
+            { id: 11, label: "Banho da Noite", icon: "shower-head", color: "text-blue-600", time: "Noite" },
+            { id: 12, label: "Lanche Noturno", icon: "utensils", color: "text-orange-300", time: "Noite" },
+            { id: 13, label: "Assistir TV", icon: "tv", color: "text-gray-600", time: "Relax" },
+            { id: 14, label: "Escovar os Dentes", icon: "check-circle-2", color: "text-teal-500", time: "Higiene" },
+            { id: 15, label: "Dormir", icon: "moon", color: "text-indigo-800", time: "Sono" },
+        ];
+
+        // --- ESTADO ---
+        let completedTasks = [];
+        const totalSteps = routineSteps.length;
+
+        // --- INICIALIZAÇÃO ---
+        function init() {
+            renderRoadLines();
+            renderTasks();
+            updateUI();
+        }
+
+        // Gera as linhas da estrada
+        function renderRoadLines() {
+            const container = document.getElementById('road-lines');
+            let html = '';
+            for(let i=0; i<20; i++) {
+                html += `<div class="w-2 h-8 bg-yellow-400 mb-8 opacity-80 rounded-sm"></div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // Renderiza a lista de tarefas
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            list.innerHTML = '';
+
+            routineSteps.forEach((step, index) => {
+                const isCompleted = completedTasks.includes(step.id);
+                // Lógica para destacar o próximo item
+                // O item é o próximo se não estiver completo E (é o primeiro OU o anterior está completo)
+                const isNext = !isCompleted && (index === 0 || completedTasks.includes(routineSteps[index - 1].id));
+
+                const itemDiv = document.createElement('div');
+                
+                // Classes dinâmicas baseadas no estado
+                let containerClasses = "relative p-4 rounded-xl border-b-4 transition-all duration-300 cursor-pointer transform ";
+                if (isCompleted) {
+                    containerClasses += "bg-green-100 border-green-300 opacity-60 scale-95 grayscale";
+                } else if (isNext) {
+                    containerClasses += "bg-white border-blue-500 scale-105 shadow-xl ring-2 ring-blue-200";
+                } else {
+                    containerClasses += "bg-white border-gray-200 opacity-90";
+                }
+
+                const checkIcon = isCompleted ? 'check-circle-2' : 'circle';
+                const checkColor = isCompleted ? 'text-green-500' : 'text-gray-300';
+                
+                // Recompensa visual específica do ônibus
+                let rewardBadge = '';
+                if (step.label.toLowerCase().includes("ônibus") && !isCompleted) {
+                    rewardBadge = `
+                    <div class="mt-2 text-xs bg-yellow-100 text-yellow-800 p-1 rounded text-center font-bold border border-yellow-300">
+                        🚌 PRÊMIO: PASSEIO DE ÔNIBUS
+                    </div>`;
+                }
+
+                itemDiv.className = containerClasses;
+                itemDiv.onclick = () => toggleTask(step.id);
+                itemDiv.innerHTML = `
+                    <!-- Placa de Parada -->
+                    <div class="absolute -left-[4.5rem] top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 bg-white rounded-full border-4 border-red-600 z-30 shadow-md">
+                        <span class="font-bold text-xs text-gray-700">${index + 1}</span>
+                    </div>
+                    
+                    <!-- Conector -->
+                    <div class="absolute -left-6 top-1/2 w-6 h-1 bg-gray-400"></div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full ${isCompleted ? 'bg-green-200' : 'bg-blue-50'}">
+                                <i data-lucide="${step.icon}" class="${step.color} w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800 ${isCompleted ? 'line-through text-gray-500' : ''}">${step.label}</h3>
+                                <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">${step.time}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-2xl">
+                            <i data-lucide="${checkIcon}" class="${checkColor} w-8 h-8"></i>
+                        </div>
+                    </div>
+                    ${rewardBadge}
+                `;
+
+                list.appendChild(itemDiv);
+            });
+            
+            // Re-inicializa ícones Lucide após renderizar HTML
+            lucide.createIcons();
+        }
+
+        // --- LÓGICA ---
+
+        function toggleTask(id) {
+            if (completedTasks.includes(id)) {
+                // Remove tarefa (desmarcar)
+                completedTasks = completedTasks.filter(taskId => taskId !== id);
+            } else {
+                // Adiciona tarefa
+                completedTasks.push(id);
+                
+                // Verifica vitória
+                if (completedTasks.length === totalSteps) {
+                    setTimeout(() => {
+                        document.getElementById('reward-modal').classList.remove('hidden');
+                    }, 500); // Pequeno delay para ver o ônibus chegar
+                }
+            }
+            
+            // Re-renderiza tudo
+            renderTasks();
+            updateUI();
+        }
+
+        function updateUI() {
+            // Calcula progresso
+            const progress = (completedTasks.length / totalSteps) * 100;
+            
+            // Atualiza Header
+            document.getElementById('km-display').textContent = `KM ${completedTasks.length} / ${totalSteps}`;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            // Atualiza Posição do Ônibus
+            // O ônibus desce pela tela. 90% é perto do fundo.
+            const busPosition = (completedTasks.length / totalSteps) * 90;
+            document.getElementById('bus-avatar').style.top = `${busPosition}%`;
+
+            // Efeito de fumaça
+            const smoke = document.getElementById('bus-smoke');
+            if (progress > 0 && progress < 100) {
+                smoke.classList.remove('hidden');
+                smoke.classList.add('flex');
+            } else {
+                smoke.classList.add('hidden');
+                smoke.classList.remove('flex');
+            }
+
+            // Atualiza Garagem (Final)
+            const garage = document.getElementById('garage');
+            const trophy = document.getElementById('trophy-icon');
+            const garageText = document.getElementById('garage-text');
+
+            if (completedTasks.length === totalSteps) {
+                garage.classList.remove('opacity-50');
+                garage.classList.add('scale-110', 'rotate-1');
+                trophy.classList.replace('text-yellow-700', 'text-yellow-100');
+                trophy.classList.add('animate-bounce');
+                garageText.textContent = "PARABÉNS! ROTINA COMPLETA! HORA DO DESCANSO.";
+            } else {
+                garage.classList.add('opacity-50');
+                garage.classList.remove('scale-110', 'rotate-1');
+                trophy.classList.replace('text-yellow-100', 'text-yellow-700');
+                trophy.classList.remove('animate-bounce');
+                garageText.textContent = "Complete a rota para estacionar.";
+            }
+        }
+
+        function closeReward() {
+            document.getElementById('reward-modal').classList.add('hidden');
+        }
+
+        // Iniciar app
+        init();
+
+    </script>
+</body>
+</html>
